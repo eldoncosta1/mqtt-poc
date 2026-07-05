@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common'
 import { ClientsModule, Transport } from '@nestjs/microservices'
 import { loadMqttConfig } from './mqtt.config'
 import { MqttPublisherService } from './mqtt-publisher.service'
-
-export const MQTT_CLIENT = 'MQTT_CLIENT'
+import { MQTT_CLIENT } from './mqtt-client.token'
 
 @Module({
   imports: [

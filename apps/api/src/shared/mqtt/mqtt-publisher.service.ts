@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ClientProxy } from '@nestjs/microservices'
 import { firstValueFrom } from 'rxjs'
-import { MQTT_CLIENT } from './mqtt-client.module'
+import { MQTT_CLIENT } from './mqtt-client.token'
 
 @Injectable()
 export class MqttPublisherService {
