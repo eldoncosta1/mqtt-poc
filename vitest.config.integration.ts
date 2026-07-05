@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import swc from 'unplugin-swc'
 
 export default defineConfig({
   test: {
@@ -6,4 +7,5 @@ export default defineConfig({
     globals: true,
     testTimeout: 30000,
   },
+  plugins: [swc.vite()],
 })
