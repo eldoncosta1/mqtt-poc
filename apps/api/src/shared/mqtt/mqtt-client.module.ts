@@ -7,20 +7,15 @@ export const MQTT_CLIENT = 'MQTT_CLIENT'
 
 @Module({
   imports: [
-    ClientsModule.registerAsync([
+    ClientsModule.register([
       {
         name: MQTT_CLIENT,
-        useFactory: () => {
-          const config = loadMqttConfig()
-          return {
-            transport: Transport.MQTT,
-            options: {
-              url: config.url,
-              username: config.username,
-              password: config.password,
-              publishOptions: { qos: config.qos },
-            },
-          }
+        transport: Transport.MQTT,
+        options: {
+          url: loadMqttConfig().url,
+          username: loadMqttConfig().username,
+          password: loadMqttConfig().password,
+          publishOptions: { qos: loadMqttConfig().qos },
         },
       },
     ]),
