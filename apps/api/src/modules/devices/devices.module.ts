@@ -5,7 +5,9 @@ import { PrismaDevicesRepository } from './infrastructure/prisma-devices.reposit
 import { RegisterDeviceUseCase } from './application/use-cases/register-device.use-case'
 import { ListDevicesUseCase } from './application/use-cases/list-devices.use-case'
 import { GetDeviceUseCase } from './application/use-cases/get-device.use-case'
+import { UpdateDeviceStatusUseCase } from './application/use-cases/update-device-status.use-case'
 import { DevicesController } from './presentation/controllers/devices.controller'
+import { DevicesStatusListener } from './presentation/mqtt/devices-status.listener'
 
 @Module({
   providers: [
@@ -14,8 +16,9 @@ import { DevicesController } from './presentation/controllers/devices.controller
     RegisterDeviceUseCase,
     ListDevicesUseCase,
     GetDeviceUseCase,
+    UpdateDeviceStatusUseCase,
   ],
-  controllers: [DevicesController],
+  controllers: [DevicesController, DevicesStatusListener],
   exports: [DEVICES_REPOSITORY, RegisterDeviceUseCase, ListDevicesUseCase, GetDeviceUseCase],
 })
 export class DevicesModule {}
