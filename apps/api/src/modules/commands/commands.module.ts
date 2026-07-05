@@ -6,7 +6,9 @@ import { PrismaCommandsRepository } from './infrastructure/prisma-commands.repos
 import { CreateCommandUseCase } from './application/use-cases/create-command.use-case'
 import { ListCommandsUseCase } from './application/use-cases/list-commands.use-case'
 import { GetCommandUseCase } from './application/use-cases/get-command.use-case'
+import { HandleCommandResponseUseCase } from './application/use-cases/handle-command-response.use-case'
 import { CommandsController } from './presentation/controllers/commands.controller'
+import { CommandResponsesListener } from './presentation/mqtt/command-responses.listener'
 
 @Module({
   imports: [MqttClientModule],
@@ -16,8 +18,9 @@ import { CommandsController } from './presentation/controllers/commands.controll
     CreateCommandUseCase,
     ListCommandsUseCase,
     GetCommandUseCase,
+    HandleCommandResponseUseCase,
   ],
-  controllers: [CommandsController],
+  controllers: [CommandsController, CommandResponsesListener],
   exports: [COMMANDS_REPOSITORY, CreateCommandUseCase, ListCommandsUseCase, GetCommandUseCase],
 })
 export class CommandsModule {}
