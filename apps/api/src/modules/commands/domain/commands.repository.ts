@@ -7,6 +7,7 @@ export interface CommandsRepository {
   list(status?: CommandStatus): Promise<Command[]>
   findDeviceById(deviceId: string): Promise<{ id: string; externalId: string } | null>
   findByDeviceExternalIdAndId(externalId: string, commandId: string): Promise<Command | null>
+  expireStalePending(cutoff: Date): Promise<Array<{ id: string; deviceId: string; externalId: string }>>
 }
 
 export const COMMANDS_REPOSITORY = Symbol('COMMANDS_REPOSITORY')

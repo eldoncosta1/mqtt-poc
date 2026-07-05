@@ -50,4 +50,16 @@ export class PrismaCommandsRepository implements CommandsRepository {
   findByDeviceExternalIdAndId(externalId: string, commandId: string) {
     return this.prisma.command.findFirst({ where: { id: commandId, device: { externalId } } })
   }
+
+  async expireStalePending(cutoff: Date) {
+    return this.prisma.$queryRaw<Array<{ id: string; deviceId: string; externalId: string }>>`
+      UPDATE "Command" c
+      SET status = 'TIMEOUT', "respondedAt" = now()
+      FROM "Device" d
+      WHERE c."deviceId" = d.id
+        AND c.status = 'PENDING'
+        AND c."createdAt" < ${cutoff}
+      RETURNING c.id, c."deviceId", d."externalId"
+    `
+  }
 }

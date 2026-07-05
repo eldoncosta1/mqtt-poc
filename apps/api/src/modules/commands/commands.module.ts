@@ -7,6 +7,8 @@ import { CreateCommandUseCase } from './application/use-cases/create-command.use
 import { ListCommandsUseCase } from './application/use-cases/list-commands.use-case'
 import { GetCommandUseCase } from './application/use-cases/get-command.use-case'
 import { HandleCommandResponseUseCase } from './application/use-cases/handle-command-response.use-case'
+import { ExpireStaleCommandsUseCase } from './application/use-cases/expire-stale-commands.use-case'
+import { ExpireCommandsTask } from './tasks/expire-commands.task'
 import { CommandsController } from './presentation/controllers/commands.controller'
 import { CommandResponsesListener } from './presentation/mqtt/command-responses.listener'
 
@@ -19,6 +21,8 @@ import { CommandResponsesListener } from './presentation/mqtt/command-responses.
     ListCommandsUseCase,
     GetCommandUseCase,
     HandleCommandResponseUseCase,
+    ExpireStaleCommandsUseCase,
+    ExpireCommandsTask,
   ],
   controllers: [CommandsController, CommandResponsesListener],
   exports: [COMMANDS_REPOSITORY, CreateCommandUseCase, ListCommandsUseCase, GetCommandUseCase],
