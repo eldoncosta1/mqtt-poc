@@ -1,0 +1,27 @@
+{
+  "name": "mqtt-poc",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9.15.0"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @mqtt-poc/api dev",
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "prisma": "^5.22.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}

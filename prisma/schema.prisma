@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeviceStatus {
+  ONLINE   // dispositivo publicou status "online" (ou LWT connect) recentemente
+  OFFLINE  // broker publicou a mensagem de LWT (Last Will) indicando desconexão
+  UNKNOWN  // ainda não recebemos nenhuma mensagem de status deste dispositivo
+}
+
+enum CommandStatus {
+  PENDING        // comando criado e publicado com sucesso, aguardando resposta do dispositivo
+  ACKED          // dispositivo respondeu confirmando execução do comando
+  FAILED         // dispositivo respondeu indicando falha ao executar o comando
+  PUBLISH_FAILED // a publicação da mensagem no broker falhou (nunca saiu da API)
+  TIMEOUT        // nenhuma resposta chegou dentro do prazo configurado (MQTT_COMMAND_TIMEOUT_MS)
+}
+
+model Device {
+  id         String       @id @default(uuid())     // identificador interno (uuid), usado nas rotas REST
+  externalId String       @unique                  // identificador físico do dispositivo (serial/MAC), usado nos tópicos MQTT
+  name       String                                 // nome amigável exibido no frontend
+  status     DeviceStatus @default(UNKNOWN)          // status atual, atualizado via tópico devices/{externalId}/status
+  lastSeenAt DateTime?                               // timestamp da última mensagem de status recebida do dispositivo
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  commands Command[]
+
+  @@index([status])
+}
+
+model Command {
+  id          String        @id @default(uuid())    // identificador do comando, também usado como commandId de correlação no payload MQTT
+  deviceId    String                                 // FK interna para Device.id
+  type        String                                 // tipo do comando, livre (ex: "REBOOT", "SET_CONFIG")
+  payload     Json?                                  // dados adicionais do comando, formato livre por tipo
+  status      CommandStatus @default(PENDING)         // ciclo de vida do comando
+  response    Json?                                  // payload de resposta enviado pelo dispositivo, quando houver
+  createdAt   DateTime      @default(now())
+  respondedAt DateTime?                               // preenchido quando a resposta do dispositivo é processada, ou quando expira por timeout
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId])
+  @@index([status])
+}
