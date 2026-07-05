@@ -3,6 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices'
 import { loadMqttConfig } from './mqtt.config'
 import { MqttPublisherService } from './mqtt-publisher.service'
 import { MQTT_CLIENT } from './mqtt-client.token'
+import { MqttPlainSerializer } from './mqtt-plain.serializer'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MQTT_CLIENT } from './mqtt-client.token'
               username: config.username,
               password: config.password,
               publishOptions: { qos: config.qos },
+              serializer: new MqttPlainSerializer(),
             },
           }
         },
