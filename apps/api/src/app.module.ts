@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { ScheduleModule } from '@nestjs/schedule'
 import { PrismaService } from './shared/prisma/prisma.service'
@@ -7,7 +8,14 @@ import { CommandsModule } from './modules/commands/commands.module'
 import { RealtimeModule } from './shared/realtime/realtime.module'
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DevicesModule, CommandsModule, RealtimeModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
+    DevicesModule,
+    CommandsModule,
+    RealtimeModule,
+  ],
   providers: [PrismaService],
   exports: [PrismaService],
 })
