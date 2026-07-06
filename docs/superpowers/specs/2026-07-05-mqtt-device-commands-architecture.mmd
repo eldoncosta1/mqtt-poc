@@ -1,0 +1,58 @@
+flowchart TB
+    subgraph Client["apps/web (React)"]
+        UI[Interface do operador]
+        WS_Client[Socket.IO client]
+    end
+
+    subgraph API["apps/api (NestJS Hybrid App)"]
+        REST[Controllers REST\ndevices / commands]
+        UC_Create[CreateCommandUseCase]
+        UC_Response[HandleCommandResponseUseCase]
+        UC_Status[UpdateDeviceStatusUseCase]
+        UC_Expire[ExpireStaleCommandsUseCase]
+        ExpiryTask["expire-commands.task\n@Interval"]
+        Publisher[MqttPublisherService\nClientProxy.emit]
+        ListenerResp["@EventPattern\ndevices/+/responses"]
+        ListenerStatus["@EventPattern\ndevices/+/status"]
+        Gateway[StatusGateway\nWebSocket]
+        EventBus[(EventEmitter2)]
+        DB[(Postgres via Prisma)]
+    end
+
+    subgraph Broker["Broker MQTT"]
+        Mosquitto[Mosquitto local\ndev/integração]
+        EMQX[EMQX Cloud\nstaging/produção]
+    end
+
+    subgraph Device["Dispositivo"]
+        Sim[apps/device-simulator\nou dispositivo real]
+    end
+
+    UI -->|POST /commands| REST
+    REST --> UC_Create
+    UC_Create -->|persiste PENDING/PUBLISH_FAILED| DB
+    UC_Create --> Publisher
+    Publisher -->|publish devices/id/commands\nQoS configurável| Broker
+    Broker --> Sim
+
+    Sim -->|publish devices/id/responses| Broker
+    Broker --> ListenerResp
+    ListenerResp --> UC_Response
+    UC_Response -->|atualiza status/response| DB
+    UC_Response --> EventBus
+
+    Sim -->|publish devices/id/status\nretained + LWT| Broker
+    Broker --> ListenerStatus
+    ListenerStatus --> UC_Status
+    UC_Status -->|atualiza status/lastSeenAt| DB
+    UC_Status --> EventBus
+
+    ExpiryTask -->|dispara periodicamente| UC_Expire
+    UC_Expire -->|UPDATE...RETURNING atômico| DB
+    UC_Expire --> EventBus
+
+    EventBus -->|command.updated / device.status-changed| Gateway
+    Gateway -->|emit para room device:id| WS_Client
+    WS_Client --> UI
+
+    REST -->|GET /commands, /devices| DB
