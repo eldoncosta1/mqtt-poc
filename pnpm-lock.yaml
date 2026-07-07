@@ -107,6 +107,25 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.0)(terser@5.48.0)
 
+  apps/device-simulator:
+    dependencies:
+      '@mqtt-poc/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      mqtt:
+        specifier: ^5.10.1
+        version: 5.15.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.0)(terser@5.48.0)
+
   packages/shared:
     dependencies:
       zod:
