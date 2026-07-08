@@ -48,4 +48,14 @@ describe('StatusGateway', () => {
     expect(server.to).toHaveBeenCalledWith('devices')
     expect(server.emit).toHaveBeenCalledWith('device:status', { externalId: 'device-1', status: 'ONLINE', lastSeenAt })
   })
+
+  it('emits telemetry:point to the device room when telemetry.recorded fires', () => {
+    const gateway = new StatusGateway()
+    const server = makeServer()
+    gateway.server = server as any
+    const recordedAt = new Date('2026-07-08T10:00:00.000Z')
+    gateway.handleTelemetry({ externalId: 'device-1', lat: 1.5, lon: 2.5, recordedAt })
+    expect(server.to).toHaveBeenCalledWith('device:device-1')
+    expect(server.emit).toHaveBeenCalledWith('telemetry:point', { lat: 1.5, lon: 2.5, recordedAt })
+  })
 })

@@ -23,6 +23,13 @@ interface DeviceStatusChangedEvent {
   lastSeenAt: Date
 }
 
+interface TelemetryRecordedEvent {
+  externalId: string
+  lat: number
+  lon: number
+  recordedAt: Date
+}
+
 @WebSocketGateway({ cors: { origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173' } })
 @Injectable()
 export class StatusGateway {
@@ -55,6 +62,13 @@ export class StatusGateway {
       externalId: event.externalId,
       status: event.status,
       lastSeenAt: event.lastSeenAt,
+    })
+  }
+
+  @OnEvent('telemetry.recorded')
+  handleTelemetry(event: TelemetryRecordedEvent) {
+    this.server.to(`device:${event.externalId}`).emit('telemetry:point', {
+      lat: event.lat, lon: event.lon, recordedAt: event.recordedAt,
     })
   }
 }
