@@ -11,7 +11,10 @@
     "mqtt": "^5.10.1"
   },
   "devDependencies": {
+    "@nestjs/common": "^10.4.7",
+    "@nestjs/testing": "^10.4.7",
     "@types/node": "^22.0.0",
+    "reflect-metadata": "^0.2.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.8"
   }
