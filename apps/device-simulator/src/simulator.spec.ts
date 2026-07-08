@@ -17,7 +17,7 @@ function makeFakeClient() {
   return {
     publish: vi.fn(),
     subscribe: vi.fn(),
-    end: vi.fn(),
+    end: vi.fn((_force?: boolean, _opts?: any, cb?: () => void) => cb && cb()),
     on: vi.fn((event: string, handler: (...args: any[]) => void) => {
       handlers[event] = handler
     }),
@@ -120,5 +120,12 @@ describe('DeviceSimulator', () => {
       expect.any(Function),
     )
     expect(client.end).toHaveBeenCalled()
+  })
+
+  it('on stop, invokes the provided completion callback once the client ends', () => {
+    const sim = new DeviceSimulator(config, client as unknown as MqttLike)
+    const onEnd = vi.fn()
+    sim.stop(onEnd)
+    expect(onEnd).toHaveBeenCalledTimes(1)
   })
 })

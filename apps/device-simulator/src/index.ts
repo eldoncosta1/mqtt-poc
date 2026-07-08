@@ -12,8 +12,11 @@ function main(): void {
 
   const shutdown = () => {
     console.log('[simulator] encerrando...')
-    simulator.stop()
-    setTimeout(() => process.exit(0), 200)
+    const fallback = setTimeout(() => process.exit(0), 2000)
+    simulator.stop(() => {
+      clearTimeout(fallback)
+      process.exit(0)
+    })
   }
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)

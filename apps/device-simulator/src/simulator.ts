@@ -14,7 +14,7 @@ export interface MqttLike {
   publish(topic: string, payload: string, opts: { qos: 0 | 1 | 2; retain?: boolean }, cb?: (err?: Error) => void): void
   subscribe(topic: string, opts: { qos: 0 | 1 | 2 }, cb?: (err: Error | null) => void): void
   on(event: 'connect' | 'message' | 'error', handler: (...args: any[]) => void): void
-  end(force?: boolean): void
+  end(force?: boolean, opts?: Record<string, unknown>, cb?: () => void): void
 }
 
 interface SimulatorDeps {
@@ -57,9 +57,9 @@ export class DeviceSimulator {
     this.client.on('error', (err: Error) => console.error(`[simulator] erro de conexão MQTT: ${err.message}`))
   }
 
-  stop(): void {
+  stop(onEnd?: () => void): void {
     this.publishStatus('offline')
-    this.client.end()
+    this.client.end(false, {}, onEnd)
   }
 
   private handleConnect(): void {
