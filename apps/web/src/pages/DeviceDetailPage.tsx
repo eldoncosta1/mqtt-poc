@@ -48,12 +48,18 @@ export function DeviceDetailPage() {
 
     let payload: Record<string, unknown> | undefined
     if (payloadText.trim()) {
+      let parsed: unknown
       try {
-        payload = JSON.parse(payloadText)
+        parsed = JSON.parse(payloadText)
       } catch {
         setPayloadError('Payload inválido: precisa ser um JSON válido.')
         return
       }
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        setPayloadError('Payload inválido: precisa ser um objeto JSON.')
+        return
+      }
+      payload = parsed as Record<string, unknown>
     }
     createCommand.mutate({ deviceId: id, type: type.trim(), ...(payload ? { payload } : {}) })
   }
@@ -93,7 +99,8 @@ export function DeviceDetailPage() {
 
       <h2 className="mb-3 text-lg font-semibold text-gray-900">Comandos</h2>
       {commandsQuery.isLoading && <p className="text-gray-500">Carregando...</p>}
-      {deviceCommands.length === 0 && !commandsQuery.isLoading && (
+      {commandsQuery.isError && <p className="text-red-600">Erro ao carregar comandos.</p>}
+      {deviceCommands.length === 0 && !commandsQuery.isLoading && !commandsQuery.isError && (
         <p className="text-gray-500">Nenhum comando enviado para este dispositivo.</p>
       )}
       {deviceCommands.length > 0 && (

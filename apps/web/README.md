@@ -9,6 +9,10 @@ live over WebSocket.
 `VITE_API_URL` (default `http://localhost:3333`) — base URL of the API (REST + Socket.IO).
 Copy `.env.example` to `.env` to override.
 
+> When pointing `VITE_API_URL` at a non-local API, start that API with
+> `WEB_ORIGIN=<this web app's origin>` (e.g. `WEB_ORIGIN=http://localhost:5173`),
+> otherwise the API's REST CORS and the Socket.IO gateway will reject the browser.
+
 ## Run (full local stack)
 
 ```bash
