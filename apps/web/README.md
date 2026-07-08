@@ -34,6 +34,12 @@ Depois abra http://localhost:5173, cadastre um dispositivo cujo External ID corr
 `DEVICE_EXTERNAL_ID` do simulador, abra-o e envie um comando — ele passa de `PENDING` para
 `ACKED` ao vivo, e o selo do dispositivo reflete o status online/offline em tempo real.
 
+## Visualizando as mensagens no broker
+
+```bash
+docker compose exec mosquitto mosquitto_sub -t 'devices/#' -v
+```
+
 ## Testes
 
 ```bash

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -8,6 +8,16 @@ import { devicesApi } from '../api/devices'
 import type { Device } from '../api/types'
 
 vi.mock('../api/devices')
+
+const socketHandlers: Record<string, (...args: any[]) => void> = {}
+const fakeSocket = {
+  on: vi.fn((event: string, cb: (...args: any[]) => void) => {
+    socketHandlers[event] = cb
+  }),
+  emit: vi.fn(),
+  disconnect: vi.fn(),
+}
+vi.mock('socket.io-client', () => ({ io: () => fakeSocket }))
 
 const device: Device = {
   id: 'd1', externalId: 'device-1', name: 'Sensor 1',
@@ -25,7 +35,10 @@ function renderPage() {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  for (const k of Object.keys(socketHandlers)) delete socketHandlers[k]
+})
 
 describe('DevicesPage', () => {
   it('renders the list of devices from the API', async () => {
@@ -33,6 +46,20 @@ describe('DevicesPage', () => {
     renderPage()
     expect(await screen.findByText('Sensor 1')).toBeInTheDocument()
     expect(screen.getByText('device-1')).toBeInTheDocument()
+  })
+
+  it('updates a device status in realtime without a refetch', async () => {
+    vi.mocked(devicesApi.list).mockResolvedValue([{ ...device, status: 'OFFLINE' }])
+    renderPage()
+    expect(await screen.findByText('OFFLINE')).toBeInTheDocument()
+
+    act(() => {
+      socketHandlers['device:status']({ externalId: 'device-1', status: 'ONLINE', lastSeenAt: null })
+    })
+
+    expect(await screen.findByText('ONLINE')).toBeInTheDocument()
+    expect(screen.queryByText('OFFLINE')).not.toBeInTheDocument()
+    expect(devicesApi.list).toHaveBeenCalledTimes(1)
   })
 
   it('shows an empty state when there are no devices', async () => {

@@ -24,3 +24,7 @@ export function applyCommandUpdate(commands: Command[], update: CommandUpdate): 
 export function applyDeviceStatus(device: Device, update: DeviceStatusUpdate): Device {
   return { ...device, status: update.status, lastSeenAt: update.lastSeenAt }
 }
+
+export function applyDeviceStatusToList(devices: Device[], update: DeviceStatusUpdate): Device[] {
+  return devices.map((d) => (d.externalId === update.externalId ? applyDeviceStatus(d, update) : d))
+}

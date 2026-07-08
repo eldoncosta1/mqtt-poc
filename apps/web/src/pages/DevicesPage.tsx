@@ -2,13 +2,22 @@ import { FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { devicesApi } from '../api/devices'
+import type { Device } from '../api/types'
 import { StatusBadge } from '../components/StatusBadge'
+import { useDevicesRealtime } from '../realtime/useDevicesRealtime'
+import { applyDeviceStatusToList } from '../realtime/merge'
 
 export function DevicesPage() {
   const queryClient = useQueryClient()
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: devicesApi.list })
   const [externalId, setExternalId] = useState('')
   const [name, setName] = useState('')
+
+  useDevicesRealtime({
+    onDeviceStatus: (update) => {
+      queryClient.setQueryData<Device[]>(['devices'], (old) => (old ? applyDeviceStatusToList(old, update) : old))
+    },
+  })
 
   const createDevice = useMutation({
     mutationFn: (dto: { externalId: string; name: string }) => devicesApi.create(dto),

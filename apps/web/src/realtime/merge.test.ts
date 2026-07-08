@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyCommandUpdate, applyDeviceStatus } from './merge'
+import { applyCommandUpdate, applyDeviceStatus, applyDeviceStatusToList } from './merge'
 import type { Command, Device } from '../api/types'
 
 const command: Command = {
@@ -34,5 +34,24 @@ describe('applyDeviceStatus', () => {
     expect(result).toMatchObject({ status: 'ONLINE', lastSeenAt: '2026-07-07T10:05:00.000Z' })
     expect(result).not.toBe(device)
     expect(device.status).toBe('UNKNOWN')
+  })
+})
+
+describe('applyDeviceStatusToList', () => {
+  const other: Device = { ...device, id: 'd2', externalId: 'device-2', status: 'OFFLINE' }
+
+  it('updates only the matching device by externalId and does not mutate the input', () => {
+    const input = [device, other]
+    const result = applyDeviceStatusToList(input, { externalId: 'device-1', status: 'ONLINE', lastSeenAt: '2026-07-07T10:05:00.000Z' })
+    expect(result[0]).toMatchObject({ externalId: 'device-1', status: 'ONLINE', lastSeenAt: '2026-07-07T10:05:00.000Z' })
+    expect(result[1]).toEqual(other)
+    expect(result).not.toBe(input)
+    expect(input[0].status).toBe('UNKNOWN')
+  })
+
+  it('returns the list unchanged when no device matches', () => {
+    const input = [device, other]
+    const result = applyDeviceStatusToList(input, { externalId: 'device-999', status: 'ONLINE', lastSeenAt: null })
+    expect(result).toEqual(input)
   })
 })

@@ -34,6 +34,11 @@ export class StatusGateway {
     client.join(`device:${externalId}`)
   }
 
+  @SubscribeMessage('subscribe:devices')
+  handleSubscribeDevices(@ConnectedSocket() client: Socket) {
+    client.join('devices')
+  }
+
   @OnEvent('command.updated')
   handleCommandUpdated(event: CommandUpdatedEvent) {
     this.server.to(`device:${event.externalId}`).emit('command:updated', {
@@ -46,7 +51,7 @@ export class StatusGateway {
 
   @OnEvent('device.status-changed')
   handleDeviceStatusChanged(event: DeviceStatusChangedEvent) {
-    this.server.to(`device:${event.externalId}`).emit('device:status', {
+    this.server.to(`device:${event.externalId}`).to('devices').emit('device:status', {
       externalId: event.externalId,
       status: event.status,
       lastSeenAt: event.lastSeenAt,

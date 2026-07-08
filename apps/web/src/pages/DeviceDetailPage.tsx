@@ -106,12 +106,19 @@ export function DeviceDetailPage() {
       {deviceCommands.length > 0 && (
         <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
           {deviceCommands.map((command) => (
-            <li key={command.id} className="flex items-center justify-between px-4 py-3">
-              <div className="flex flex-col">
-                <span className="font-medium text-gray-900">{command.type}</span>
-                <span className="text-xs text-gray-500">{command.id}</span>
+            <li key={command.id} className="px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="font-medium text-gray-900">{command.type}</span>
+                  <span className="text-xs text-gray-500">{command.id}</span>
+                </div>
+                <StatusBadge status={command.status} />
               </div>
-              <StatusBadge status={command.status} />
+              {command.payload != null && (
+                <pre className="mt-2 overflow-x-auto rounded bg-gray-50 p-2 font-mono text-xs text-gray-700">
+                  {JSON.stringify(command.payload, null, 2)}
+                </pre>
+              )}
             </li>
           ))}
         </ul>

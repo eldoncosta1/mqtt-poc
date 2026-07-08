@@ -48,6 +48,19 @@ describe('DeviceDetailPage', () => {
     expect(screen.getAllByText('REBOOT')).toHaveLength(1)
   })
 
+  it('shows the payload as formatted JSON only for commands that have one', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([
+      { ...command, id: 'c1', type: 'SET_CONFIG', payload: { delaySeconds: 5 } },
+      { ...command, id: 'c2', type: 'REBOOT', payload: null },
+    ])
+    const { container } = renderPage()
+    await screen.findByText('SET_CONFIG')
+    expect(screen.getByText(/"delaySeconds": 5/)).toBeInTheDocument()
+    // only the command with a payload renders a <pre> block, the null one does not
+    expect(container.querySelectorAll('pre')).toHaveLength(1)
+  })
+
   it('sends a command with the entered type', async () => {
     vi.mocked(devicesApi.get).mockResolvedValue(device)
     vi.mocked(commandsApi.list).mockResolvedValue([])

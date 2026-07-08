@@ -3,7 +3,9 @@ import { StatusGateway } from './status.gateway'
 
 function makeServer() {
   const emit = vi.fn()
-  const to = vi.fn().mockReturnValue({ emit })
+  const chain: { emit: typeof emit; to: (room: string) => unknown } = { emit, to: () => chain }
+  const to = vi.fn((_room: string) => chain)
+  chain.to = to
   return { to, emit }
 }
 
@@ -13,6 +15,13 @@ describe('StatusGateway', () => {
     const join = vi.fn()
     gateway.handleSubscribe('device-1', { join } as any)
     expect(join).toHaveBeenCalledWith('device:device-1')
+  })
+
+  it('joins the shared devices room on subscribe:devices', () => {
+    const gateway = new StatusGateway()
+    const join = vi.fn()
+    gateway.handleSubscribeDevices({ join } as any)
+    expect(join).toHaveBeenCalledWith('devices')
   })
 
   it('emits command:updated to the device room when command.updated fires', () => {
@@ -36,6 +45,7 @@ describe('StatusGateway', () => {
     const lastSeenAt = new Date('2026-07-05T10:05:00.000Z')
     gateway.handleDeviceStatusChanged({ externalId: 'device-1', status: 'ONLINE', lastSeenAt })
     expect(server.to).toHaveBeenCalledWith('device:device-1')
+    expect(server.to).toHaveBeenCalledWith('devices')
     expect(server.emit).toHaveBeenCalledWith('device:status', { externalId: 'device-1', status: 'ONLINE', lastSeenAt })
   })
 })
