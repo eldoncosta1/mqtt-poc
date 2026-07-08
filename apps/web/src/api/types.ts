@@ -21,3 +21,9 @@ export interface Command {
   createdAt: string
   respondedAt: string | null
 }
+
+export interface TelemetryPoint {
+  lat: number
+  lon: number
+  recordedAt: string
+}
