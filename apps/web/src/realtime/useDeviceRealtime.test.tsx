@@ -10,7 +10,7 @@ const fakeSocket = {
   emit: vi.fn(),
   disconnect: vi.fn(),
 }
-const ioMock = vi.fn(() => fakeSocket)
+const ioMock = vi.fn((..._args: unknown[]) => fakeSocket)
 
 vi.mock('socket.io-client', () => ({ io: (...args: any[]) => ioMock(...args) }))
 
