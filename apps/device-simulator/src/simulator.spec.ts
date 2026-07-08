@@ -11,6 +11,11 @@ const config: SimulatorConfig = {
   responseDelayMs: 500,
   failureRate: 0,
   heartbeatMs: 0,
+  gpsEnabled: false,
+  gpsIntervalMs: 0,
+  gpsStartLat: -23.5,
+  gpsStartLon: -46.6,
+  gpsStepDeg: 0.001,
 }
 
 function makeFakeClient() {
@@ -172,5 +177,50 @@ describe('DeviceSimulator', () => {
     const onEnd = vi.fn()
     sim.stop(onEnd)
     expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('DeviceSimulator GPS telemetry', () => {
+  let client: ReturnType<typeof makeFakeClient>
+  beforeEach(() => { client = makeFakeClient() })
+
+  const gpsConfig = { ...config, gpsEnabled: true, gpsIntervalMs: 3000 }
+
+  const telemetryPublishes = (c: ReturnType<typeof makeFakeClient>) =>
+    c.publish.mock.calls.filter((call) => call[0] === 'devices/device-1/telemetry').length
+
+  it('on connect, publishes a telemetry point and keeps publishing on the interval', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
+    sim.start()
+    client.emit('connect')
+    expect(telemetryPublishes(client)).toBe(1) // primeiro ponto no connect
+    vi.advanceTimersByTime(3000)
+    expect(telemetryPublishes(client)).toBe(2)
+    vi.advanceTimersByTime(3000)
+    expect(telemetryPublishes(client)).toBe(3)
+    vi.useRealTimers()
+  })
+
+  it('does not publish telemetry when GPS is disabled', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...config, gpsEnabled: false }, client as unknown as MqttLike)
+    sim.start()
+    client.emit('connect')
+    vi.advanceTimersByTime(30000)
+    expect(telemetryPublishes(client)).toBe(0)
+    vi.useRealTimers()
+  })
+
+  it('stops the GPS loop on stop', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
+    sim.start()
+    client.emit('connect')
+    sim.stop()
+    const after = telemetryPublishes(client)
+    vi.advanceTimersByTime(30000)
+    expect(telemetryPublishes(client)).toBe(after)
+    vi.useRealTimers()
   })
 })
