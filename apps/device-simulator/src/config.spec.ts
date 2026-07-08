@@ -17,7 +17,18 @@ describe('loadSimulatorConfig', () => {
       externalId: 'device-001',
       responseDelayMs: 1000,
       failureRate: 0,
+      heartbeatMs: 15000,
     })
+  })
+
+  it('parses SIMULATOR_HEARTBEAT_MS and allows 0 to disable it', () => {
+    expect(loadSimulatorConfig({ ...baseEnv, SIMULATOR_HEARTBEAT_MS: '30000' }, []).heartbeatMs).toBe(30000)
+    expect(loadSimulatorConfig({ ...baseEnv, SIMULATOR_HEARTBEAT_MS: '0' }, []).heartbeatMs).toBe(0)
+  })
+
+  it('throws when SIMULATOR_HEARTBEAT_MS is invalid', () => {
+    expect(() => loadSimulatorConfig({ ...baseEnv, SIMULATOR_HEARTBEAT_MS: '-5' }, [])).toThrow('SIMULATOR_HEARTBEAT_MS inválido')
+    expect(() => loadSimulatorConfig({ ...baseEnv, SIMULATOR_HEARTBEAT_MS: 'abc' }, [])).toThrow('SIMULATOR_HEARTBEAT_MS inválido')
   })
 
   it('lets a --externalId CLI arg override DEVICE_EXTERNAL_ID', () => {

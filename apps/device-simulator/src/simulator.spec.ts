@@ -10,6 +10,7 @@ const config: SimulatorConfig = {
   externalId: 'device-1',
   responseDelayMs: 500,
   failureRate: 0,
+  heartbeatMs: 0,
 }
 
 function makeFakeClient() {
@@ -107,6 +108,50 @@ describe('DeviceSimulator', () => {
       { qos: 1 },
       expect.any(Function),
     )
+    vi.useRealTimers()
+  })
+
+  it('on connect, starts a heartbeat that republishes online on the configured interval', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...config, heartbeatMs: 15000 }, client as unknown as MqttLike)
+    sim.start()
+    client.emit('connect')
+
+    const statusPublishes = () =>
+      client.publish.mock.calls.filter((c) => c[0] === 'devices/device-1/status').length
+
+    expect(statusPublishes()).toBe(1) // online inicial no connect
+    vi.advanceTimersByTime(15000)
+    expect(statusPublishes()).toBe(2) // primeira batida
+    vi.advanceTimersByTime(15000)
+    expect(statusPublishes()).toBe(3) // segunda batida
+    vi.useRealTimers()
+  })
+
+  it('does not start a heartbeat when heartbeatMs is 0', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...config, heartbeatMs: 0 }, client as unknown as MqttLike)
+    sim.start()
+    client.emit('connect')
+
+    const statusPublishes = () =>
+      client.publish.mock.calls.filter((c) => c[0] === 'devices/device-1/status').length
+    const initial = statusPublishes()
+    vi.advanceTimersByTime(60000)
+    expect(statusPublishes()).toBe(initial) // nenhuma batida extra
+    vi.useRealTimers()
+  })
+
+  it('stops the heartbeat on stop', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...config, heartbeatMs: 15000 }, client as unknown as MqttLike)
+    sim.start()
+    client.emit('connect')
+    sim.stop()
+
+    const callsAfterStop = client.publish.mock.calls.length
+    vi.advanceTimersByTime(60000)
+    expect(client.publish.mock.calls.length).toBe(callsAfterStop) // sem mais batidas
     vi.useRealTimers()
   })
 

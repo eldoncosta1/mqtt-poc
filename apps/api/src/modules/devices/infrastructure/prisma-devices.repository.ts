@@ -30,4 +30,17 @@ export class PrismaDevicesRepository implements DevicesRepository {
       return null
     }
   }
+
+  async markStaleOffline(cutoff: Date) {
+    // Só ONLINE com última notícia antes do cutoff. UNKNOWN/OFFLINE ficam intocados.
+    const stale = await this.prisma.device.findMany({
+      where: { status: DeviceStatus.ONLINE, lastSeenAt: { lt: cutoff } },
+    })
+    if (stale.length === 0) return []
+    await this.prisma.device.updateMany({
+      where: { id: { in: stale.map((d) => d.id) } },
+      data: { status: DeviceStatus.OFFLINE },
+    })
+    return stale.map((d) => ({ ...d, status: DeviceStatus.OFFLINE }))
+  }
 }

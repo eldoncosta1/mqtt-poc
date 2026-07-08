@@ -6,6 +6,8 @@ import { RegisterDeviceUseCase } from './application/use-cases/register-device.u
 import { ListDevicesUseCase } from './application/use-cases/list-devices.use-case'
 import { GetDeviceUseCase } from './application/use-cases/get-device.use-case'
 import { UpdateDeviceStatusUseCase } from './application/use-cases/update-device-status.use-case'
+import { MarkStaleDevicesOfflineUseCase } from './application/use-cases/mark-stale-devices-offline.use-case'
+import { DeviceLivenessTask } from './tasks/device-liveness.task'
 import { DevicesController } from './presentation/controllers/devices.controller'
 import { DevicesStatusListener } from './presentation/mqtt/devices-status.listener'
 
@@ -17,6 +19,8 @@ import { DevicesStatusListener } from './presentation/mqtt/devices-status.listen
     ListDevicesUseCase,
     GetDeviceUseCase,
     UpdateDeviceStatusUseCase,
+    MarkStaleDevicesOfflineUseCase,
+    DeviceLivenessTask,
   ],
   controllers: [DevicesController, DevicesStatusListener],
   exports: [DEVICES_REPOSITORY, RegisterDeviceUseCase, ListDevicesUseCase, GetDeviceUseCase],

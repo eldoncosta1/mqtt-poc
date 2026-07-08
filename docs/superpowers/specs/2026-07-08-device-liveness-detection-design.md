@@ -1,7 +1,7 @@
 # Detecção de Liveness de Dispositivos — Design (melhoria futura)
 
 **Data:** 2026-07-08
-**Status:** Exploração / candidato a melhoria (não implementado)
+**Status:** Implementado (Opção A — heartbeat no simulador + timeout de liveness no servidor)
 
 ## Contexto
 
