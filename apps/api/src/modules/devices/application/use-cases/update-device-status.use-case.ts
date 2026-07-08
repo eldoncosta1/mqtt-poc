@@ -14,7 +14,9 @@ export class UpdateDeviceStatusUseCase {
 
   async execute(input: { externalId: string; status: 'online' | 'offline'; timestamp: string }) {
     const status = input.status === 'online' ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE
-    const lastSeenAt = new Date(input.timestamp)
+    // Horário de recebimento no servidor — a liveness compara com o relógio do servidor,
+    // então gravar o timestamp do device causaria falso-offline em caso de skew de relógio.
+    const lastSeenAt = new Date()
     const updated = await this.repo.updateStatus(input.externalId, status, lastSeenAt)
     if (!updated) {
       this.logger.warn(`Status recebido para dispositivo desconhecido: ${input.externalId}`)
