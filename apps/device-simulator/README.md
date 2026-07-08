@@ -8,22 +8,41 @@ Ele se conecta com `mqtt.js`, assina `devices/{externalId}/commands`, responde e
 dispositivo em `devices/{externalId}/status` (`online` retido ao conectar, `offline` via
 LWT ao desconectar).
 
-## Executar
+## Dev (hot-reload)
 
-O simulador lê a configuração a partir do ambiente do processo. Diferente da API, ele
-**não** carrega um arquivo `.env` automaticamente — exporte as variáveis no shell ou
-passe-as inline:
+Para desenvolvimento, use o script `dev:simulator` na raiz — ele roda o TypeScript direto
+com `tsx watch` (recarrega ao salvar) e já assume os defaults locais
+`MQTT_URL=mqtt://localhost:1883` e `DEVICE_EXTERNAL_ID=device-001`, então funciona sem
+argumentos (só precisa do Mosquitto de pé: `docker compose up -d mosquitto`):
 
 ```bash
-# contra o Mosquitto local (docker compose up -d mosquitto)
-MQTT_URL=mqtt://localhost:1883 DEVICE_EXTERNAL_ID=device-001 \
+# sobe um dispositivo simulado "device-001" no broker local
+pnpm dev:simulator
+
+# sobrescreve o id do dispositivo (útil para rodar vários dispositivos)
+pnpm dev:simulator --externalId=device-002
+# ...ou via variável de ambiente
+DEVICE_EXTERNAL_ID=device-002 pnpm dev:simulator
+```
+
+Rode várias instâncias (um processo por dispositivo simulado) apontando para o mesmo broker.
+
+## Executar (build + produção)
+
+Fora do dev, o simulador lê a configuração a partir do ambiente do processo. Diferente da
+API, ele **não** carrega um arquivo `.env` automaticamente — exporte as variáveis no shell
+ou passe-as inline:
+
+```bash
+# apontando para o EMQX Cloud, por exemplo
+MQTT_URL=mqtts://host:8883 MQTT_USERNAME=... MQTT_PASSWORD=... DEVICE_EXTERNAL_ID=device-001 \
   pnpm --filter @mqtt-poc/device-simulator start
 
 # sobrescreve o id do dispositivo via CLI (tem precedência sobre DEVICE_EXTERNAL_ID)
 pnpm --filter @mqtt-poc/device-simulator start -- --externalId=device-002
 ```
 
-Rode várias instâncias (um processo por dispositivo simulado) apontando para o mesmo broker.
+(O `start` roda `node dist/index.js`, então rode `pnpm --filter @mqtt-poc/device-simulator build` antes.)
 
 ## Configuração (variáveis de ambiente)
 

@@ -24,11 +24,10 @@ pnpm prisma migrate deploy
 pnpm --filter @mqtt-poc/api start
 
 # 3. um dispositivo simulado (para os comandos serem respondidos)
-MQTT_URL=mqtt://localhost:1883 DEVICE_EXTERNAL_ID=device-001 \
-  pnpm --filter @mqtt-poc/device-simulator start
+pnpm dev:simulator            # sobe "device-001"; use --externalId=... para outro id
 
 # 4. servidor de desenvolvimento do web (:5173)
-pnpm --filter @mqtt-poc/web dev
+pnpm dev:web
 ```
 
 Depois abra http://localhost:5173, cadastre um dispositivo cujo External ID corresponda ao

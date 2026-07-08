@@ -9,6 +9,8 @@
   "scripts": {
     "postinstall": "pnpm --filter @mqtt-poc/shared build",
     "dev:api": "pnpm --filter @mqtt-poc/api dev",
+    "dev:web": "pnpm --filter @mqtt-poc/web dev",
+    "dev:simulator": "pnpm --filter @mqtt-poc/device-simulator dev",
     "build": "pnpm -r build",
     "test": "vitest run",
     "test:watch": "vitest",
