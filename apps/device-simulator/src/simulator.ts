@@ -21,6 +21,8 @@ interface SimulatorDeps {
   now?: () => Date
   rng?: () => number
   setTimeout?: typeof setTimeout
+  setInterval?: typeof setInterval
+  clearInterval?: typeof clearInterval
 }
 
 export function buildConnectOptions(config: SimulatorConfig): IClientOptions {
@@ -40,6 +42,9 @@ export class DeviceSimulator {
   private readonly now: () => Date
   private readonly rng: () => number
   private readonly timer: typeof setTimeout
+  private readonly interval: typeof setInterval
+  private readonly clearTimer: typeof clearInterval
+  private heartbeat?: ReturnType<typeof setInterval>
 
   constructor(
     private readonly config: SimulatorConfig,
@@ -49,6 +54,8 @@ export class DeviceSimulator {
     this.now = deps.now ?? (() => new Date())
     this.rng = deps.rng ?? Math.random
     this.timer = deps.setTimeout ?? setTimeout
+    this.interval = deps.setInterval ?? setInterval
+    this.clearTimer = deps.clearInterval ?? clearInterval
   }
 
   start(): void {
@@ -58,6 +65,7 @@ export class DeviceSimulator {
   }
 
   stop(onEnd?: () => void): void {
+    this.stopHeartbeat()
     this.publishStatus('offline')
     this.client.end(false, {}, onEnd)
   }
@@ -65,9 +73,23 @@ export class DeviceSimulator {
   private handleConnect(): void {
     console.log(`[simulator] conectado como ${this.config.externalId}`)
     this.publishStatus('online')
+    this.startHeartbeat()
     this.client.subscribe(commandsTopic(this.config.externalId), { qos: this.config.qos }, (err) => {
       if (err) console.error(`[simulator] falha ao assinar comandos: ${err.message}`)
     })
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat() // idempotente — evita intervals duplicados numa reconexão
+    if (this.config.heartbeatMs <= 0) return
+    this.heartbeat = this.interval(() => this.publishStatus('online'), this.config.heartbeatMs)
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeat) {
+      this.clearTimer(this.heartbeat)
+      this.heartbeat = undefined
+    }
   }
 
   private handleMessage(_topic: string, payload: Buffer): void {

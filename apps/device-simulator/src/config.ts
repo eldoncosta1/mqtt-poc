@@ -6,6 +6,7 @@ export interface SimulatorConfig {
   externalId: string
   responseDelayMs: number
   failureRate: number
+  heartbeatMs: number
 }
 
 function externalIdFromArgv(argv: string[]): string | undefined {
@@ -30,6 +31,11 @@ export function loadSimulatorConfig(env: NodeJS.ProcessEnv, argv: string[]): Sim
     throw new Error(`SIMULATOR_FAILURE_RATE inválido: ${env.SIMULATOR_FAILURE_RATE}. Deve estar entre 0 e 1.`)
   }
 
+  const heartbeatMs = Number(env.SIMULATOR_HEARTBEAT_MS ?? '15000')
+  if (Number.isNaN(heartbeatMs) || heartbeatMs < 0) {
+    throw new Error(`SIMULATOR_HEARTBEAT_MS inválido: ${env.SIMULATOR_HEARTBEAT_MS}. Deve ser >= 0 (0 desliga o heartbeat).`)
+  }
+
   return {
     url,
     username: env.MQTT_USERNAME || undefined,
@@ -38,5 +44,6 @@ export function loadSimulatorConfig(env: NodeJS.ProcessEnv, argv: string[]): Sim
     externalId,
     responseDelayMs,
     failureRate,
+    heartbeatMs,
   }
 }

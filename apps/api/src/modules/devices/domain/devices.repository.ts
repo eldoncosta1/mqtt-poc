@@ -6,6 +6,7 @@ export interface DevicesRepository {
   findByExternalId(externalId: string): Promise<Device | null>
   list(): Promise<Device[]>
   updateStatus(externalId: string, status: DeviceStatus, lastSeenAt: Date): Promise<Device | null>
+  markStaleOffline(cutoff: Date): Promise<Device[]>
 }
 
 export const DEVICES_REPOSITORY = Symbol('DEVICES_REPOSITORY')
