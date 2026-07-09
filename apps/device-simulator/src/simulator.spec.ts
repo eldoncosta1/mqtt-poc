@@ -180,31 +180,23 @@ describe('DeviceSimulator', () => {
   })
 })
 
-describe('DeviceSimulator GPS telemetry', () => {
+describe('DeviceSimulator GPS telemetry (command-driven)', () => {
   let client: ReturnType<typeof makeFakeClient>
   beforeEach(() => { client = makeFakeClient() })
 
   const gpsConfig = { ...config, gpsEnabled: true, gpsIntervalMs: 3000 }
+  const START = { commandId: '11111111-1111-1111-1111-111111111111', type: 'START_TELEMETRY' }
+  const STOP = { commandId: '22222222-2222-2222-2222-222222222222', type: 'STOP_TELEMETRY' }
 
   const telemetryPublishes = (c: ReturnType<typeof makeFakeClient>) =>
     c.publish.mock.calls.filter((call) => call[0] === 'devices/device-1/telemetry').length
 
-  it('on connect, publishes a telemetry point and keeps publishing on the interval', () => {
+  const sendCommand = (c: ReturnType<typeof makeFakeClient>, cmd: unknown) =>
+    c.emit('message', 'devices/device-1/commands', Buffer.from(JSON.stringify(cmd)))
+
+  it('does not publish telemetry on connect (collection is command-driven)', () => {
     vi.useFakeTimers()
     const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
-    sim.start()
-    client.emit('connect')
-    expect(telemetryPublishes(client)).toBe(1) // primeiro ponto no connect
-    vi.advanceTimersByTime(3000)
-    expect(telemetryPublishes(client)).toBe(2)
-    vi.advanceTimersByTime(3000)
-    expect(telemetryPublishes(client)).toBe(3)
-    vi.useRealTimers()
-  })
-
-  it('does not publish telemetry when GPS is disabled', () => {
-    vi.useFakeTimers()
-    const sim = new DeviceSimulator({ ...config, gpsEnabled: false }, client as unknown as MqttLike)
     sim.start()
     client.emit('connect')
     vi.advanceTimersByTime(30000)
@@ -212,15 +204,68 @@ describe('DeviceSimulator GPS telemetry', () => {
     vi.useRealTimers()
   })
 
-  it('stops the GPS loop on stop', () => {
+  it('starts publishing after a START_TELEMETRY command is ACKed', () => {
     vi.useFakeTimers()
     const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
     sim.start()
     client.emit('connect')
-    sim.stop()
-    const after = telemetryPublishes(client)
+    sendCommand(client, START)
+    expect(telemetryPublishes(client)).toBe(0) // aguarda o ACK (responseDelayMs)
+    vi.advanceTimersByTime(500) // ACK -> startGps -> primeiro ponto imediato
+    expect(telemetryPublishes(client)).toBe(1)
+    vi.advanceTimersByTime(3000)
+    expect(telemetryPublishes(client)).toBe(2)
+    vi.useRealTimers()
+  })
+
+  it('stops publishing after a STOP_TELEMETRY command is ACKed', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
+    sim.start()
+    client.emit('connect')
+    sendCommand(client, START)
+    vi.advanceTimersByTime(500)
+    sendCommand(client, STOP)
+    vi.advanceTimersByTime(500) // ACK -> stopGps
+    const afterStop = telemetryPublishes(client)
     vi.advanceTimersByTime(30000)
-    expect(telemetryPublishes(client)).toBe(after)
+    expect(telemetryPublishes(client)).toBe(afterStop) // nenhuma telemetria nova
+    vi.useRealTimers()
+  })
+
+  it('does not start GPS when a START_TELEMETRY command FAILs', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...gpsConfig, failureRate: 1 }, client as unknown as MqttLike, { rng: () => 0.0 })
+    sim.start()
+    client.emit('connect')
+    sendCommand(client, START)
+    vi.advanceTimersByTime(30000)
+    expect(telemetryPublishes(client)).toBe(0) // FAILED -> estado inalterado
+    vi.useRealTimers()
+  })
+
+  it('does not start GPS on a START_TELEMETRY when SIMULATOR_GPS_ENABLED is false', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator({ ...gpsConfig, gpsEnabled: false }, client as unknown as MqttLike, { rng: () => 0.5 })
+    sim.start()
+    client.emit('connect')
+    sendCommand(client, START)
+    vi.advanceTimersByTime(30000)
+    expect(telemetryPublishes(client)).toBe(0) // trava-mestra
+    vi.useRealTimers()
+  })
+
+  it('stops the GPS loop on stop after it was started by command', () => {
+    vi.useFakeTimers()
+    const sim = new DeviceSimulator(gpsConfig, client as unknown as MqttLike, { rng: () => 0.5 })
+    sim.start()
+    client.emit('connect')
+    sendCommand(client, START)
+    vi.advanceTimersByTime(500)
+    sim.stop()
+    const afterStop = telemetryPublishes(client)
+    vi.advanceTimersByTime(30000)
+    expect(telemetryPublishes(client)).toBe(afterStop)
     vi.useRealTimers()
   })
 })

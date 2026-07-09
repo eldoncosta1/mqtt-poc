@@ -10,6 +10,7 @@ import {
   decideResponseStatus,
 } from './messages'
 import { telemetryTopic, nextPosition, initialPosition, buildTelemetryMessage } from './gps'
+import { TELEMETRY_START_COMMAND, TELEMETRY_STOP_COMMAND } from '@mqtt-poc/shared'
 
 export interface MqttLike {
   publish(topic: string, payload: string, opts: { qos: 0 | 1 | 2; retain?: boolean }, cb?: (err?: Error) => void): void
@@ -79,7 +80,6 @@ export class DeviceSimulator {
     console.log(`[simulator] conectado como ${this.config.externalId}`)
     this.publishStatus('online')
     this.startHeartbeat()
-    this.startGps()
     this.client.subscribe(commandsTopic(this.config.externalId), { qos: this.config.qos }, (err) => {
       if (err) console.error(`[simulator] falha ao assinar comandos: ${err.message}`)
     })
@@ -129,6 +129,10 @@ export class DeviceSimulator {
     console.log(`[simulator] comando recebido ${command.commandId} (${command.type})`)
     this.timer(() => {
       const status = decideResponseStatus(this.config.failureRate, this.rng)
+      if (status === 'ACKED') {
+        if (command.type === TELEMETRY_START_COMMAND) this.startGps()
+        else if (command.type === TELEMETRY_STOP_COMMAND) this.stopGps()
+      }
       const message = buildResponseMessage(command.commandId, status)
       this.client.publish(responsesTopic(this.config.externalId), JSON.stringify(message), { qos: this.config.qos }, (err) => {
         if (err) console.error(`[simulator] falha ao publicar resposta: ${err.message}`)
