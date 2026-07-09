@@ -48,8 +48,8 @@ export function loadSimulatorConfig(env: NodeJS.ProcessEnv, argv: string[]): Sim
     throw new Error(`SIMULATOR_GPS_INTERVAL_MS inválido: ${env.SIMULATOR_GPS_INTERVAL_MS}. Deve ser >= 0 (0 desliga o GPS).`)
   }
 
-  const gpsStartLat = Number(env.SIMULATOR_GPS_START_LAT ?? '-23.5505')
-  const gpsStartLon = Number(env.SIMULATOR_GPS_START_LON ?? '-46.6333')
+  const gpsStartLat = Number(env.SIMULATOR_GPS_START_LAT ?? '-9.3986')
+  const gpsStartLon = Number(env.SIMULATOR_GPS_START_LON ?? '-40.5008')
   const gpsStepDeg = Number(env.SIMULATOR_GPS_STEP_DEG ?? '0.0005')
 
   return {

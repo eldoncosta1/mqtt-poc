@@ -20,8 +20,8 @@ describe('loadSimulatorConfig', () => {
       heartbeatMs: 15000,
       gpsEnabled: true,
       gpsIntervalMs: 3000,
-      gpsStartLat: -23.5505,
-      gpsStartLon: -46.6333,
+      gpsStartLat: -9.3986,
+      gpsStartLon: -40.5008,
       gpsStepDeg: 0.0005,
     })
   })
@@ -70,8 +70,8 @@ describe('loadSimulatorConfig', () => {
     expect(config).toMatchObject({
       gpsEnabled: true,
       gpsIntervalMs: 3000,
-      gpsStartLat: -23.5505,
-      gpsStartLon: -46.6333,
+      gpsStartLat: -9.3986,
+      gpsStartLon: -40.5008,
       gpsStepDeg: 0.0005,
     })
   })
