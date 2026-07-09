@@ -40,7 +40,10 @@ function renderPage() {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(telemetryApi.list).mockResolvedValue([])
+})
 
 describe('DeviceDetailPage', () => {
   it('renders the device name, status, and its commands', async () => {
