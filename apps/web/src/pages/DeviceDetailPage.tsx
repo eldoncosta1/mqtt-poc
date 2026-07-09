@@ -3,10 +3,14 @@ import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { devicesApi } from '../api/devices'
 import { commandsApi } from '../api/commands'
-import type { Command, Device } from '../api/types'
+import { telemetryApi } from '../api/telemetry'
+import type { Command, Device, TelemetryPoint } from '../api/types'
 import { StatusBadge } from '../components/StatusBadge'
+import { DeviceMap } from '../components/DeviceMap'
 import { useDeviceRealtime } from '../realtime/useDeviceRealtime'
-import { applyCommandUpdate, applyDeviceStatus } from '../realtime/merge'
+import { applyCommandUpdate, applyDeviceStatus, appendTelemetryPoint } from '../realtime/merge'
+
+const TELEMETRY_LIMIT = 100
 
 export function DeviceDetailPage() {
   const { id = '' } = useParams()
@@ -14,6 +18,12 @@ export function DeviceDetailPage() {
 
   const deviceQuery = useQuery({ queryKey: ['device', id], queryFn: () => devicesApi.get(id), enabled: !!id })
   const commandsQuery = useQuery({ queryKey: ['commands'], queryFn: commandsApi.list })
+  const telemetryQuery = useQuery({
+    queryKey: ['telemetry', id],
+    queryFn: () => telemetryApi.list(id, TELEMETRY_LIMIT),
+    enabled: !!id,
+  })
+  const telemetryPoints = telemetryQuery.data ?? []
 
   const device = deviceQuery.data
   const deviceCommands = (commandsQuery.data ?? []).filter((c) => c.deviceId === id)
@@ -24,6 +34,11 @@ export function DeviceDetailPage() {
     },
     onDeviceStatus: (update) => {
       queryClient.setQueryData<Device>(['device', id], (old) => (old ? applyDeviceStatus(old, update) : old))
+    },
+    onTelemetry: (point) => {
+      queryClient.setQueryData<TelemetryPoint[]>(['telemetry', id], (old) =>
+        appendTelemetryPoint(old ?? [], point, TELEMETRY_LIMIT),
+      )
     },
   })
 
@@ -77,6 +92,11 @@ export function DeviceDetailPage() {
           <p className="text-sm text-gray-500">{device.externalId}</p>
         </div>
         <StatusBadge status={device.status} />
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Localização</h2>
+        <DeviceMap points={telemetryPoints} />
       </div>
 
       <form onSubmit={onSubmit} className="mb-8 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
