@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { PrismaService } from './shared/prisma/prisma.service'
 import { DevicesModule } from './modules/devices/devices.module'
 import { CommandsModule } from './modules/commands/commands.module'
+import { TelemetryModule } from './modules/telemetry/telemetry.module'
 import { RealtimeModule } from './shared/realtime/realtime.module'
 
 @Module({
@@ -14,6 +15,7 @@ import { RealtimeModule } from './shared/realtime/realtime.module'
     ScheduleModule.forRoot(),
     DevicesModule,
     CommandsModule,
+    TelemetryModule,
     RealtimeModule,
   ],
   providers: [PrismaService],

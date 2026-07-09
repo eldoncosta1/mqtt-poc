@@ -19,3 +19,10 @@ export const deviceStatusMessageSchema = z.object({
   timestamp: z.string().datetime(),
 })
 export type DeviceStatusMessage = z.infer<typeof deviceStatusMessageSchema>
+
+export const gpsTelemetryMessageSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  timestamp: z.string().datetime(),
+})
+export type GpsTelemetryMessage = z.infer<typeof gpsTelemetryMessageSchema>

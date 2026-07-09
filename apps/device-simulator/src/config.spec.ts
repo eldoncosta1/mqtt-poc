@@ -18,6 +18,11 @@ describe('loadSimulatorConfig', () => {
       responseDelayMs: 1000,
       failureRate: 0,
       heartbeatMs: 15000,
+      gpsEnabled: true,
+      gpsIntervalMs: 3000,
+      gpsStartLat: -9.3986,
+      gpsStartLon: -40.5008,
+      gpsStepDeg: 0.0005,
     })
   })
 
@@ -58,5 +63,28 @@ describe('loadSimulatorConfig', () => {
 
   it('throws when SIMULATOR_FAILURE_RATE is outside 0..1', () => {
     expect(() => loadSimulatorConfig({ ...baseEnv, SIMULATOR_FAILURE_RATE: '2' }, [])).toThrow('SIMULATOR_FAILURE_RATE inválido')
+  })
+
+  it('defaults GPS to enabled with São Paulo start and sensible step/interval', () => {
+    const config = loadSimulatorConfig(baseEnv, [])
+    expect(config).toMatchObject({
+      gpsEnabled: true,
+      gpsIntervalMs: 3000,
+      gpsStartLat: -9.3986,
+      gpsStartLon: -40.5008,
+      gpsStepDeg: 0.0005,
+    })
+  })
+
+  it('parses GPS env vars and lets SIMULATOR_GPS_ENABLED=false disable it', () => {
+    const config = loadSimulatorConfig(
+      { ...baseEnv, SIMULATOR_GPS_ENABLED: 'false', SIMULATOR_GPS_INTERVAL_MS: '5000', SIMULATOR_GPS_START_LAT: '10', SIMULATOR_GPS_START_LON: '20', SIMULATOR_GPS_STEP_DEG: '0.01' },
+      [],
+    )
+    expect(config).toMatchObject({ gpsEnabled: false, gpsIntervalMs: 5000, gpsStartLat: 10, gpsStartLon: 20, gpsStepDeg: 0.01 })
+  })
+
+  it('throws when SIMULATOR_GPS_INTERVAL_MS is invalid', () => {
+    expect(() => loadSimulatorConfig({ ...baseEnv, SIMULATOR_GPS_INTERVAL_MS: '-1' }, [])).toThrow('SIMULATOR_GPS_INTERVAL_MS inválido')
   })
 })

@@ -31,6 +31,7 @@ model Device {
   updatedAt  DateTime     @updatedAt              // data da última atualização do registro
 
   commands Command[]                              // comandos associados a este dispositivo
+  telemetry Telemetry[]                            // pontos de telemetria GPS deste dispositivo
 
   @@index([status])
 }
@@ -49,4 +50,17 @@ model Command {
 
   @@index([deviceId])
   @@index([status])
+}
+
+model Telemetry {
+  id         String   @id @default(uuid())        // identificador do ponto de telemetria
+  deviceId   String                                // FK interna para Device.id
+  lat        Float                                 // latitude reportada pelo dispositivo
+  lon        Float                                 // longitude reportada pelo dispositivo
+  recordedAt DateTime                              // timestamp informado pelo dispositivo
+  createdAt  DateTime @default(now())              // hora de recepção no servidor
+
+  device Device @relation(fields: [deviceId], references: [id]) // dispositivo dono deste ponto
+
+  @@index([deviceId, recordedAt])
 }

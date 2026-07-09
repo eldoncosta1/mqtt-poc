@@ -1,4 +1,4 @@
-import type { Command, CommandStatus, Device, DeviceStatus } from '../api/types'
+import type { Command, CommandStatus, Device, DeviceStatus, TelemetryPoint } from '../api/types'
 
 export interface CommandUpdate {
   commandId: string
@@ -27,4 +27,8 @@ export function applyDeviceStatus(device: Device, update: DeviceStatusUpdate): D
 
 export function applyDeviceStatusToList(devices: Device[], update: DeviceStatusUpdate): Device[] {
   return devices.map((d) => (d.externalId === update.externalId ? applyDeviceStatus(d, update) : d))
+}
+
+export function appendTelemetryPoint(points: TelemetryPoint[], point: TelemetryPoint, cap: number): TelemetryPoint[] {
+  return [...points, point].slice(-cap)
 }

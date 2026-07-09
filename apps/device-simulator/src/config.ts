@@ -7,6 +7,11 @@ export interface SimulatorConfig {
   responseDelayMs: number
   failureRate: number
   heartbeatMs: number
+  gpsEnabled: boolean
+  gpsIntervalMs: number
+  gpsStartLat: number
+  gpsStartLon: number
+  gpsStepDeg: number
 }
 
 function externalIdFromArgv(argv: string[]): string | undefined {
@@ -36,6 +41,17 @@ export function loadSimulatorConfig(env: NodeJS.ProcessEnv, argv: string[]): Sim
     throw new Error(`SIMULATOR_HEARTBEAT_MS inválido: ${env.SIMULATOR_HEARTBEAT_MS}. Deve ser >= 0 (0 desliga o heartbeat).`)
   }
 
+  const gpsEnabled = (env.SIMULATOR_GPS_ENABLED ?? 'true') !== 'false'
+
+  const gpsIntervalMs = Number(env.SIMULATOR_GPS_INTERVAL_MS ?? '3000')
+  if (Number.isNaN(gpsIntervalMs) || gpsIntervalMs < 0) {
+    throw new Error(`SIMULATOR_GPS_INTERVAL_MS inválido: ${env.SIMULATOR_GPS_INTERVAL_MS}. Deve ser >= 0 (0 desliga o GPS).`)
+  }
+
+  const gpsStartLat = Number(env.SIMULATOR_GPS_START_LAT ?? '-9.3986')
+  const gpsStartLon = Number(env.SIMULATOR_GPS_START_LON ?? '-40.5008')
+  const gpsStepDeg = Number(env.SIMULATOR_GPS_STEP_DEG ?? '0.0005')
+
   return {
     url,
     username: env.MQTT_USERNAME || undefined,
@@ -45,5 +61,10 @@ export function loadSimulatorConfig(env: NodeJS.ProcessEnv, argv: string[]): Sim
     responseDelayMs,
     failureRate,
     heartbeatMs,
+    gpsEnabled,
+    gpsIntervalMs,
+    gpsStartLat,
+    gpsStartLon,
+    gpsStepDeg,
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { commandMessageSchema, commandResponseMessageSchema, deviceStatusMessageSchema } from './mqtt.schema'
+import { commandMessageSchema, commandResponseMessageSchema, deviceStatusMessageSchema, gpsTelemetryMessageSchema } from './mqtt.schema'
 
 describe('commandMessageSchema', () => {
   it('parses a valid command message', () => {
@@ -46,6 +46,25 @@ describe('deviceStatusMessageSchema', () => {
 
   it('rejects a missing timestamp', () => {
     const result = deviceStatusMessageSchema.safeParse({ status: 'online' })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('gpsTelemetryMessageSchema', () => {
+  it('parses a valid GPS telemetry message', () => {
+    const result = gpsTelemetryMessageSchema.safeParse({
+      lat: -23.55, lon: -46.63, timestamp: new Date().toISOString(),
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects out-of-range latitude', () => {
+    const result = gpsTelemetryMessageSchema.safeParse({ lat: 120, lon: 0, timestamp: new Date().toISOString() })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects a missing timestamp', () => {
+    const result = gpsTelemetryMessageSchema.safeParse({ lat: 0, lon: 0 })
     expect(result.success).toBe(false)
   })
 })

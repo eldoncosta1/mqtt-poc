@@ -52,4 +52,11 @@ describe('useDeviceRealtime', () => {
     unmount()
     expect(fakeSocket.disconnect).toHaveBeenCalled()
   })
+
+  it('forwards telemetry:point to the onTelemetry handler', () => {
+    const onTelemetry = vi.fn()
+    render(<Harness externalId="device-1" handlers={{ onTelemetry }} />)
+    socketHandlers['telemetry:point']({ lat: 1.5, lon: 2.5, recordedAt: '2026-07-08T10:00:00.000Z' })
+    expect(onTelemetry).toHaveBeenCalledWith({ lat: 1.5, lon: 2.5, recordedAt: '2026-07-08T10:00:00.000Z' })
+  })
 })

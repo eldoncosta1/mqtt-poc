@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { applyCommandUpdate, applyDeviceStatus, applyDeviceStatusToList } from './merge'
-import type { Command, Device } from '../api/types'
+import { applyCommandUpdate, applyDeviceStatus, applyDeviceStatusToList, appendTelemetryPoint } from './merge'
+import type { Command, Device, TelemetryPoint } from '../api/types'
 
 const command: Command = {
   id: 'c1', deviceId: 'd1', type: 'REBOOT', payload: null,
@@ -53,5 +53,18 @@ describe('applyDeviceStatusToList', () => {
     const input = [device, other]
     const result = applyDeviceStatusToList(input, { externalId: 'device-999', status: 'ONLINE', lastSeenAt: null })
     expect(result).toEqual(input)
+  })
+})
+
+const pt = (lat: number): TelemetryPoint => ({ lat, lon: 0, recordedAt: `t${lat}` })
+
+describe('appendTelemetryPoint', () => {
+  it('appends a point to the end', () => {
+    expect(appendTelemetryPoint([pt(1)], pt(2), 10)).toEqual([pt(1), pt(2)])
+  })
+
+  it('drops the oldest points beyond the cap', () => {
+    const result = appendTelemetryPoint([pt(1), pt(2), pt(3)], pt(4), 3)
+    expect(result).toEqual([pt(2), pt(3), pt(4)])
   })
 })

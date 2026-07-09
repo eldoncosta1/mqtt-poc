@@ -3,10 +3,15 @@ import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { devicesApi } from '../api/devices'
 import { commandsApi } from '../api/commands'
-import type { Command, Device } from '../api/types'
+import { TELEMETRY_START_COMMAND, TELEMETRY_STOP_COMMAND } from '../api/telemetryCommands'
+import { telemetryApi } from '../api/telemetry'
+import type { Command, Device, TelemetryPoint } from '../api/types'
 import { StatusBadge } from '../components/StatusBadge'
+import { DeviceMap } from '../components/DeviceMap'
 import { useDeviceRealtime } from '../realtime/useDeviceRealtime'
-import { applyCommandUpdate, applyDeviceStatus } from '../realtime/merge'
+import { applyCommandUpdate, applyDeviceStatus, appendTelemetryPoint } from '../realtime/merge'
+
+const TELEMETRY_LIMIT = 100
 
 export function DeviceDetailPage() {
   const { id = '' } = useParams()
@@ -14,6 +19,12 @@ export function DeviceDetailPage() {
 
   const deviceQuery = useQuery({ queryKey: ['device', id], queryFn: () => devicesApi.get(id), enabled: !!id })
   const commandsQuery = useQuery({ queryKey: ['commands'], queryFn: commandsApi.list })
+  const telemetryQuery = useQuery({
+    queryKey: ['telemetry', id],
+    queryFn: () => telemetryApi.list(id, TELEMETRY_LIMIT),
+    enabled: !!id,
+  })
+  const telemetryPoints = telemetryQuery.data ?? []
 
   const device = deviceQuery.data
   const deviceCommands = (commandsQuery.data ?? []).filter((c) => c.deviceId === id)
@@ -25,11 +36,17 @@ export function DeviceDetailPage() {
     onDeviceStatus: (update) => {
       queryClient.setQueryData<Device>(['device', id], (old) => (old ? applyDeviceStatus(old, update) : old))
     },
+    onTelemetry: (point) => {
+      queryClient.setQueryData<TelemetryPoint[]>(['telemetry', id], (old) =>
+        appendTelemetryPoint(old ?? [], point, TELEMETRY_LIMIT),
+      )
+    },
   })
 
   const [type, setType] = useState('')
   const [payloadText, setPayloadText] = useState('')
   const [payloadError, setPayloadError] = useState<string | null>(null)
+  const [collecting, setCollecting] = useState(false)
 
   const createCommand = useMutation({
     mutationFn: (dto: { deviceId: string; type: string; payload?: Record<string, unknown> }) =>
@@ -40,6 +57,18 @@ export function DeviceDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['commands'] })
     },
   })
+
+  const toggleCollection = useMutation({
+    mutationFn: (commandType: string) => commandsApi.create({ deviceId: id, type: commandType }),
+    onSuccess: () => {
+      setCollecting((c) => !c)
+      queryClient.invalidateQueries({ queryKey: ['commands'] })
+    },
+  })
+
+  const onToggleCollection = () => {
+    toggleCollection.mutate(collecting ? TELEMETRY_STOP_COMMAND : TELEMETRY_START_COMMAND)
+  }
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -77,6 +106,23 @@ export function DeviceDetailPage() {
           <p className="text-sm text-gray-500">{device.externalId}</p>
         </div>
         <StatusBadge status={device.status} />
+      </div>
+
+      <div className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Localização</h2>
+          <button
+            type="button"
+            onClick={onToggleCollection}
+            disabled={toggleCollection.isPending}
+            className={`rounded px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
+              collecting ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {collecting ? 'Parar coleta' : 'Iniciar coleta'}
+          </button>
+        </div>
+        <DeviceMap points={telemetryPoints} />
       </div>
 
       <form onSubmit={onSubmit} className="mb-8 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">

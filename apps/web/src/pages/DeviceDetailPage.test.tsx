@@ -6,11 +6,16 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { DeviceDetailPage } from './DeviceDetailPage'
 import { devicesApi } from '../api/devices'
 import { commandsApi } from '../api/commands'
+import { telemetryApi } from '../api/telemetry'
 import type { Command, Device } from '../api/types'
 import { useDeviceRealtime } from '../realtime/useDeviceRealtime'
 
 vi.mock('../api/devices')
 vi.mock('../api/commands')
+vi.mock('../api/telemetry')
+vi.mock('../components/DeviceMap', () => ({
+  DeviceMap: ({ points }: { points: unknown[] }) => <div data-testid="device-map" data-count={points.length} />,
+}))
 vi.mock('../realtime/useDeviceRealtime', () => ({ useDeviceRealtime: vi.fn() }))
 
 const device: Device = {
@@ -35,7 +40,10 @@ function renderPage() {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(telemetryApi.list).mockResolvedValue([])
+})
 
 describe('DeviceDetailPage', () => {
   it('renders the device name, status, and its commands', async () => {
@@ -133,5 +141,63 @@ describe('DeviceDetailPage', () => {
       handlers.onDeviceStatus!({ externalId: 'device-1', status: 'OFFLINE', lastSeenAt: '2026-07-08T10:05:00.000Z' })
     })
     expect(await screen.findByText('OFFLINE')).toBeInTheDocument()
+  })
+
+  it('renders the map with the loaded telemetry history', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(telemetryApi.list).mockResolvedValue([
+      { lat: 1, lon: 2, recordedAt: 't1' },
+      { lat: 3, lon: 4, recordedAt: 't2' },
+    ])
+    renderPage()
+    await screen.findByRole('heading', { name: 'Sensor 1' })
+    const map = await screen.findByTestId('device-map')
+    expect(map.getAttribute('data-count')).toBe('2')
+  })
+
+  it('appends a realtime telemetry point to the map', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(telemetryApi.list).mockResolvedValue([{ lat: 1, lon: 2, recordedAt: 't1' }])
+    renderPage()
+    await screen.findByTestId('device-map')
+
+    const calls = vi.mocked(useDeviceRealtime).mock.calls
+    const handlers = calls[calls.length - 1][1]
+    act(() => {
+      handlers.onTelemetry!({ lat: 5, lon: 6, recordedAt: 't2' })
+    })
+    await waitFor(() => expect(screen.getByTestId('device-map').getAttribute('data-count')).toBe('2'))
+  })
+
+  it('renders the collection toggle as "Iniciar coleta" by default', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    renderPage()
+    expect(await screen.findByRole('button', { name: /iniciar coleta/i })).toBeInTheDocument()
+  })
+
+  it('sends START_TELEMETRY and flips to "Parar coleta" when starting collection', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(commandsApi.create).mockResolvedValue({ ...command, id: 'c-start', type: 'START_TELEMETRY' })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Sensor 1' })
+    await userEvent.click(screen.getByRole('button', { name: /iniciar coleta/i }))
+    await waitFor(() => expect(commandsApi.create).toHaveBeenCalledWith({ deviceId: 'd1', type: 'START_TELEMETRY' }))
+    expect(await screen.findByRole('button', { name: /parar coleta/i })).toBeInTheDocument()
+  })
+
+  it('sends STOP_TELEMETRY when stopping an active collection', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(commandsApi.create).mockResolvedValue({ ...command, id: 'c-stop', type: 'STOP_TELEMETRY' })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Sensor 1' })
+    await userEvent.click(screen.getByRole('button', { name: /iniciar coleta/i }))
+    await screen.findByRole('button', { name: /parar coleta/i })
+    await userEvent.click(screen.getByRole('button', { name: /parar coleta/i }))
+    await waitFor(() => expect(commandsApi.create).toHaveBeenLastCalledWith({ deviceId: 'd1', type: 'STOP_TELEMETRY' }))
   })
 })
