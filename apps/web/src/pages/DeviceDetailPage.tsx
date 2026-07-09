@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { devicesApi } from '../api/devices'
 import { commandsApi } from '../api/commands'
+import { TELEMETRY_START_COMMAND, TELEMETRY_STOP_COMMAND } from '../api/telemetryCommands'
 import { telemetryApi } from '../api/telemetry'
 import type { Command, Device, TelemetryPoint } from '../api/types'
 import { StatusBadge } from '../components/StatusBadge'
@@ -45,6 +46,7 @@ export function DeviceDetailPage() {
   const [type, setType] = useState('')
   const [payloadText, setPayloadText] = useState('')
   const [payloadError, setPayloadError] = useState<string | null>(null)
+  const [collecting, setCollecting] = useState(false)
 
   const createCommand = useMutation({
     mutationFn: (dto: { deviceId: string; type: string; payload?: Record<string, unknown> }) =>
@@ -55,6 +57,18 @@ export function DeviceDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['commands'] })
     },
   })
+
+  const toggleCollection = useMutation({
+    mutationFn: (commandType: string) => commandsApi.create({ deviceId: id, type: commandType }),
+    onSuccess: () => {
+      setCollecting((c) => !c)
+      queryClient.invalidateQueries({ queryKey: ['commands'] })
+    },
+  })
+
+  const onToggleCollection = () => {
+    toggleCollection.mutate(collecting ? TELEMETRY_STOP_COMMAND : TELEMETRY_START_COMMAND)
+  }
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -95,7 +109,19 @@ export function DeviceDetailPage() {
       </div>
 
       <div className="mb-6">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Localização</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Localização</h2>
+          <button
+            type="button"
+            onClick={onToggleCollection}
+            disabled={toggleCollection.isPending}
+            className={`rounded px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
+              collecting ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {collecting ? 'Parar coleta' : 'Iniciar coleta'}
+          </button>
+        </div>
         <DeviceMap points={telemetryPoints} />
       </div>
 

@@ -170,4 +170,34 @@ describe('DeviceDetailPage', () => {
     })
     await waitFor(() => expect(screen.getByTestId('device-map').getAttribute('data-count')).toBe('2'))
   })
+
+  it('renders the collection toggle as "Iniciar coleta" by default', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    renderPage()
+    expect(await screen.findByRole('button', { name: /iniciar coleta/i })).toBeInTheDocument()
+  })
+
+  it('sends START_TELEMETRY and flips to "Parar coleta" when starting collection', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(commandsApi.create).mockResolvedValue({ ...command, id: 'c-start', type: 'START_TELEMETRY' })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Sensor 1' })
+    await userEvent.click(screen.getByRole('button', { name: /iniciar coleta/i }))
+    await waitFor(() => expect(commandsApi.create).toHaveBeenCalledWith({ deviceId: 'd1', type: 'START_TELEMETRY' }))
+    expect(await screen.findByRole('button', { name: /parar coleta/i })).toBeInTheDocument()
+  })
+
+  it('sends STOP_TELEMETRY when stopping an active collection', async () => {
+    vi.mocked(devicesApi.get).mockResolvedValue(device)
+    vi.mocked(commandsApi.list).mockResolvedValue([])
+    vi.mocked(commandsApi.create).mockResolvedValue({ ...command, id: 'c-stop', type: 'STOP_TELEMETRY' })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Sensor 1' })
+    await userEvent.click(screen.getByRole('button', { name: /iniciar coleta/i }))
+    await screen.findByRole('button', { name: /parar coleta/i })
+    await userEvent.click(screen.getByRole('button', { name: /parar coleta/i }))
+    await waitFor(() => expect(commandsApi.create).toHaveBeenLastCalledWith({ deviceId: 'd1', type: 'STOP_TELEMETRY' }))
+  })
 })
